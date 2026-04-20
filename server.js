@@ -1,39 +1,37 @@
+require("dotenv").config();
+
 const express = require("express");
 const cors = require("cors");
 const Stripe = require("stripe");
 
 const app = express();
+
+// 🔥 IMPORTANT : webhook AVANT json
+app.use("/stripe-webhook", express.raw({ type: "application/json" }));
+
 app.use(cors());
 app.use(express.json());
 
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+// 🔑 Générateur
 function generateKey() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   const part = () =>
-    Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+    Array.from({ length: 4 }, () =>
+      chars[Math.floor(Math.random() * chars.length)]
+    ).join("");
   return `IA-${part()}-${part()}`;
 }
 
-// 🔥 TEST GET
+// 🧪 TEST
 app.get("/generate-license", (req, res) => {
   const key = generateKey();
   console.log("🧪 TEST GET →", key);
   res.json({ license: key });
 });
 
-// 🔥 POST
-app.post("/generate-license", (req, res) => {
-  const key = generateKey();
-  console.log("⚙️ POST →", key);
-  res.json({ license: key });
-});
-
-// 🔥 WEBHOOK STRIPE (temp)
-const Stripe = require("stripe");
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
-// ⚠️ IMPORTANT (à mettre en haut du fichier)
-app.use("/stripe-webhook", express.raw({ type: "application/json" }));
-
+// 💳 WEBHOOK STRIPE
 app.post("/stripe-webhook", (req, res) => {
   const sig = req.headers["stripe-signature"];
 
@@ -68,7 +66,7 @@ app.post("/stripe-webhook", (req, res) => {
   res.json({ received: true });
 });
 
-// 🔥 SUCCESS PAGE
+// SUCCESS
 app.get("/success", (req, res) => {
   const license = generateKey();
 
@@ -78,11 +76,11 @@ app.get("/success", (req, res) => {
     <h2>${license}</h2>
 
     <p>Télécharger IAssistant :</p>
-    <a href="https://drive.google.com/uc?export=download&id=1_CrTlYwoWQkT81_maNJhwUJELvGAqgNY">Télécharger</a>
+    <a href="${process.env.DOWNLOAD_URL}">Télécharger</a>
   `);
 });
 
-// 🔥 SERVER (Railway OK)
+// SERVER
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
