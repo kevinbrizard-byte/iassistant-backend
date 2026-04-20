@@ -47,7 +47,7 @@ app.post("/stripe-webhook", async (req, res) => {
       process.env.STRIPE_WEBHOOK_SECRET
     );
   } catch (err) {
-    console.error("❌ Signature invalide");
+    console.error("❌ Signature invalide :", err.message);
     return res.sendStatus(400);
   }
 
@@ -66,13 +66,13 @@ app.post("/stripe-webhook", async (req, res) => {
     console.log("🔑 Licence :", license);
 
     try {
-      await resend.emails.send({
+      const result = await resend.emails.send({
         from: "IAssistant <noreply@iassistant-studio.com>",
         to: email,
         subject: "🎉 Votre licence IAssistant",
         html: `
           <h1>Merci pour votre achat 🚀</h1>
-          
+
           <p>Voici votre licence :</p>
           <h2>${license}</h2>
 
@@ -80,6 +80,8 @@ app.post("/stripe-webhook", async (req, res) => {
           <a href="${process.env.DOWNLOAD_URL}">Télécharger</a>
         `
       });
+
+      console.log("✅ RESEND RESULT :", result);
       console.log("📧 Email envoyé !");
     } catch (err) {
       console.error("❌ Erreur envoi email :", err);
@@ -88,6 +90,7 @@ app.post("/stripe-webhook", async (req, res) => {
 
   res.json({ received: true });
 });
+
 
 // SUCCESS
 app.get("/success", (req, res) => {
