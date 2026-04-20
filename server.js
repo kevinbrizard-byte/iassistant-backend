@@ -4,6 +4,9 @@ const express = require("express");
 const cors = require("cors");
 const Stripe = require("stripe");
 
+const { Resend } = require("resend");
+const resend = new Resend(process.env.RESEND_API_KEY);
+
 const app = express();
 
 // 🔥 IMPORTANT : webhook AVANT json
@@ -32,7 +35,7 @@ app.get("/generate-license", (req, res) => {
 });
 
 // 💳 WEBHOOK STRIPE
-app.post("/stripe-webhook", (req, res) => {
+app.post("/stripe-webhook", async (req, res) => {
   const sig = req.headers["stripe-signature"];
 
   let event;
@@ -61,6 +64,26 @@ app.post("/stripe-webhook", (req, res) => {
     console.log("💰 Paiement validé !");
     console.log("📧 Email :", email);
     console.log("🔑 Licence :", license);
+
+    try {
+      await resend.emails.send({
+        from: "IAssistant <onboarding@resend.dev>",
+        to: email,
+        subject: "🎉 Votre licence IAssistant",
+        html: `
+          <h1>Merci pour votre achat 🚀</h1>
+          
+          <p>Voici votre licence :</p>
+          <h2>${license}</h2>
+
+          <p>Télécharger IAssistant :</p>
+          <a href="${process.env.DOWNLOAD_URL}">Télécharger</a>
+        `
+      });
+      console.log("📧 Email envoyé !");
+    } catch (err) {
+      console.error("❌ Erreur envoi email :", err);
+    }
   }
 
   res.json({ received: true });
