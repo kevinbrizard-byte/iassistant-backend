@@ -67,7 +67,7 @@ app.post("/stripe-webhook", async (req, res) => {
 
     try {
       await resend.emails.send({
-        from: "IAssistant <onboarding@resend.dev>",
+        from: "IAssistant <noreply@iassistant-studio.com>",
         to: email,
         subject: "🎉 Votre licence IAssistant",
         html: `
