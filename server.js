@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const Stripe = require("stripe");
 
 const app = express();
 app.use(cors());
@@ -27,16 +28,44 @@ app.post("/generate-license", (req, res) => {
 });
 
 // 🔥 WEBHOOK STRIPE (temp)
+const Stripe = require("stripe");
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+// ⚠️ IMPORTANT (à mettre en haut du fichier)
+app.use("/stripe-webhook", express.raw({ type: "application/json" }));
+
 app.post("/stripe-webhook", (req, res) => {
-  const email = req.body.email;
+  const sig = req.headers["stripe-signature"];
 
-  const license = generateKey();
+  let event;
 
-  console.log("💰 Paiement !");
-  console.log("📧 Email :", email);
-  console.log("🔑 Licence :", license);
+  try {
+    event = stripe.webhooks.constructEvent(
+      req.body,
+      sig,
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
+  } catch (err) {
+    console.error("❌ Signature invalide");
+    return res.sendStatus(400);
+  }
 
-  res.json({ success: true, license });
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object;
+
+    const email =
+      session.customer_details?.email ||
+      session.customer_email ||
+      "NO_EMAIL";
+
+    const license = generateKey();
+
+    console.log("💰 Paiement validé !");
+    console.log("📧 Email :", email);
+    console.log("🔑 Licence :", license);
+  }
+
+  res.json({ received: true });
 });
 
 // 🔥 SUCCESS PAGE
