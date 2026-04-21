@@ -34,6 +34,24 @@ app.get("/generate-license", (req, res) => {
   res.json({ license: key });
 });
 
+// 🔐 VERIFY LICENSE
+app.post("/verify-license", (req, res) => {
+  const { key } = req.body;
+
+  if (!key) {
+    return res.json({ valid: false });
+  }
+
+  const regex = /^IA-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
+
+  if (!regex.test(key)) {
+    return res.json({ valid: false });
+  }
+
+  // 👉 pour l’instant : toute clé valide = OK
+  return res.json({ valid: true });
+});
+
 // 💳 WEBHOOK STRIPE
 app.post("/stripe-webhook", async (req, res) => {
   const sig = req.headers["stripe-signature"];
